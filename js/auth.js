@@ -174,7 +174,10 @@ async function verifyAccount(user) {
     return;
   }
 
-  if (!user.email?.endsWith("@g.jbedu.kr")) {
+  // 수정 코드
+const allowedDomains = ['@g.jbedu.kr', '@ai.jbedu.kr'];
+const isAllowed = allowedDomains.some(domain => email.endsWith(domain));
+if (!isAllowed) {
     await blockAccess("학교 계정으로만 접속할 수 있습니다");
     return;
   }
