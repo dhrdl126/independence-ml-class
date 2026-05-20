@@ -2,9 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebas
 import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// TODO: Firebase 콘솔에서 복사한 값으로 교체
 const firebaseConfig = {
-  const firebaseConfig = {
   apiKey: "AIzaSyCBQ2xJQ9Wh_kVk47FB2maENF_ztiIzWhU",
   authDomain: "independence-ml-class.firebaseapp.com",
   projectId: "independence-ml-class",
