@@ -41,6 +41,7 @@ const nameForm = document.getElementById("nameScreen");
 
 let currentStudent = null;
 let unsubscribeControl = null;
+let handledRedirect = false;
 
 export function parseStudentEmail(email) {
   const match = email.match(/26jj18h(\d{4})@g\.jbedu\.kr/);
@@ -242,13 +243,25 @@ nameForm.addEventListener("submit", async (event) => {
   showWaiting({ ...currentStudent, ...profile, name });
 });
 
-getRedirectResult(auth).catch((error) => {
-  showScreen("login");
-  showMessage("로그인에 실패했습니다. 잠시 후 다시 시도해주세요.", true);
-  console.error(error);
-});
+async function handleRedirectLogin() {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      handledRedirect = true;
+      await verifyAccount(result.user);
+    }
+  } catch (error) {
+    showScreen("login");
+    showMessage("로그인에 실패했습니다. 잠시 후 다시 시도해주세요.", true);
+    console.error(error);
+  }
+}
+
+handleRedirectLogin();
 
 onAuthStateChanged(auth, async (user) => {
+  if (handledRedirect) return;
+
   if (!user) {
     logoutButton.hidden = true;
     showScreen("login");
