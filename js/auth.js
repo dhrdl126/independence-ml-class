@@ -7,9 +7,8 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import {
-  getRedirectResult,
   onAuthStateChanged,
-  signInWithRedirect,
+  signInWithPopup,
   signOut
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
@@ -41,7 +40,6 @@ const nameForm = document.getElementById("nameScreen");
 
 let currentStudent = null;
 let unsubscribeControl = null;
-let handledRedirect = false;
 
 export function parseStudentEmail(email) {
   const match = email.match(/26jj18h(\d{4})@g\.jbedu\.kr/);
@@ -197,8 +195,9 @@ async function verifyAccount(user) {
 
 googleLoginButton.addEventListener("click", async () => {
   try {
-    setLoading("Google 로그인 페이지로 이동합니다.");
-    await signInWithRedirect(auth, googleProvider);
+    setLoading("Google 로그인 창을 여는 중입니다.");
+    const result = await signInWithPopup(auth, googleProvider);
+    await verifyAccount(result.user);
   } catch (error) {
     showScreen("login");
     showMessage("로그인에 실패했습니다. 잠시 후 다시 시도해주세요.", true);
@@ -243,25 +242,7 @@ nameForm.addEventListener("submit", async (event) => {
   showWaiting({ ...currentStudent, ...profile, name });
 });
 
-async function handleRedirectLogin() {
-  try {
-    const result = await getRedirectResult(auth);
-    if (result?.user) {
-      handledRedirect = true;
-      await verifyAccount(result.user);
-    }
-  } catch (error) {
-    showScreen("login");
-    showMessage("로그인에 실패했습니다. 잠시 후 다시 시도해주세요.", true);
-    console.error(error);
-  }
-}
-
-handleRedirectLogin();
-
 onAuthStateChanged(auth, async (user) => {
-  if (handledRedirect) return;
-
   if (!user) {
     logoutButton.hidden = true;
     showScreen("login");
