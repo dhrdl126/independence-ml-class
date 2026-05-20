@@ -2,6 +2,7 @@ import { auth, db, googleProvider } from "./firebase-config.js";
 import { ROUTE_LABELS } from "./keywords.js";
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -59,6 +60,9 @@ const reflectionList = document.getElementById("reflectionList");
 const cloudGrid = document.getElementById("cloudGrid");
 const exportAllButton = document.getElementById("exportAllButton");
 const exportReflectionsButton = document.getElementById("exportReflectionsButton");
+const resetUidInput = document.getElementById("resetUidInput");
+const resetStudentButton = document.getElementById("resetStudentButton");
+const resetClassButton = document.getElementById("resetClassButton");
 const showAnswersButton = document.getElementById("showAnswersButton");
 const modalBackdrop = document.getElementById("modalBackdrop");
 const modalTitle = document.getElementById("modalTitle");
@@ -483,6 +487,44 @@ function exportReflectionsCsv() {
   downloadCsv(`독립운동수업_성찰일지_${selectedClass}반_${csvDate()}.csv`, reflectionRows());
 }
 
+async function deleteStudentSubmissions(uid) {
+  await Promise.all([
+    deleteDoc(doc(db, "classes", selectedClass, "labelings", uid)),
+    deleteDoc(doc(db, "classes", selectedClass, "cards", uid)),
+    deleteDoc(doc(db, "classes", selectedClass, "reflections", uid))
+  ]);
+}
+
+async function resetStudentData() {
+  const uid = resetUidInput.value.trim();
+  if (!uid) {
+    alert("학생 UID를 입력해주세요.");
+    return;
+  }
+
+  if (!confirm("정말 초기화하시겠습니까?")) return;
+
+  await deleteStudentSubmissions(uid);
+  resetUidInput.value = "";
+  alert(`${selectedClass}반 학생 데이터가 초기화되었습니다.`);
+}
+
+async function deleteCollectionDocs(collectionName) {
+  const snapshot = await getDocs(collection(db, "classes", selectedClass, collectionName));
+  await Promise.all(snapshot.docs.map((item) => deleteDoc(item.ref)));
+}
+
+async function resetClassData() {
+  if (!confirm("정말 초기화하시겠습니까?")) return;
+
+  await Promise.all([
+    deleteCollectionDocs("labelings"),
+    deleteCollectionDocs("cards"),
+    deleteCollectionDocs("reflections")
+  ]);
+  alert(`${selectedClass}반 전체 제출 데이터가 초기화되었습니다.`);
+}
+
 async function verifyTeacher(user) {
   const teacherSnapshot = await getDoc(doc(db, "teachers", user.uid));
   if (!teacherSnapshot.exists()) {
@@ -522,6 +564,8 @@ phaseButtons.addEventListener("click", async (event) => {
 startTimerButton.addEventListener("click", startTimer);
 exportAllButton.addEventListener("click", exportAllCsv);
 exportReflectionsButton.addEventListener("click", exportReflectionsCsv);
+resetStudentButton.addEventListener("click", resetStudentData);
+resetClassButton.addEventListener("click", resetClassData);
 showAnswersButton.addEventListener("click", showAllAnswers);
 closeModalButton.addEventListener("click", closeModal);
 modalBackdrop.addEventListener("click", (event) => {

@@ -56,6 +56,20 @@
       background: #eef4ff;
     }
 
+    .danger-zone {
+      border-color: #fecaca;
+      background: #fff7f7;
+    }
+
+    .danger-button {
+      color: #fff;
+      background: #dc2626;
+    }
+
+    .danger-button:hover {
+      background: #b91c1c;
+    }
+
     .dashboard-layout {
       display: grid;
       grid-template-columns: 360px minmax(0, 1fr);
@@ -242,6 +256,20 @@
           <button id="exportAllButton" class="export-button" type="button">전체 CSV 내보내기</button>
           <button id="exportReflectionsButton" class="export-button" type="button">성찰일지만 내보내기</button>
         </div>
+
+        <section class="panel stack danger-zone">
+          <div>
+            <p class="eyebrow">Test Reset</p>
+            <h2>테스트 초기화</h2>
+            <p class="lead">선택된 반의 제출 데이터만 삭제합니다.</p>
+          </div>
+          <label>
+            특정 학생 UID
+            <input id="resetUidInput" type="text" placeholder="삭제할 학생 UID 입력">
+          </label>
+          <button id="resetStudentButton" class="danger-button" type="button">해당 학생 데이터 초기화</button>
+          <button id="resetClassButton" class="danger-button" type="button">해당 반 전체 데이터 초기화</button>
+        </section>
       </aside>
 
       <div class="dashboard-main">

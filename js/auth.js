@@ -169,21 +169,23 @@ async function verifyAccount(user) {
   setLoading();
   logoutButton.hidden = false;
 
+  if (!user.email?.endsWith("@g.jbedu.kr")) {
+    await blockAccess("학교 계정으로만 접속할 수 있습니다");
+    return;
+  }
+
   if (await checkTeacher(user.uid)) {
     window.location.href = "teacher.html";
     return;
   }
 
-  // 수정 코드
-const allowedDomains = ['@g.jbedu.kr', '@ai.jbedu.kr'];
-const isAllowed = allowedDomains.some(domain => user.email.endsWith(domain));
-if (!isAllowed) {
-    await blockAccess("학교 계정으로만 접속할 수 있습니다");
+  const parsed = parseStudentEmail(user.email);
+  if (!parsed) {
+    await blockAccess("해당 수업 대상이 아닙니다");
     return;
   }
 
-  const parsed = parseStudentEmail(user.email);
-  if (!parsed || !TARGET_CLASSES.includes(parsed.classNum)) {
+  if (!TARGET_CLASSES.includes(parsed.classNum)) {
     await blockAccess("해당 수업 대상 반이 아닙니다");
     return;
   }
