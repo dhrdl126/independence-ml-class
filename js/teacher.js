@@ -262,8 +262,13 @@ function renderStudents() {
   studentList.innerHTML = data.students.length
     ? data.students.map((student) => `
       <div class="list-row">
-        <strong>${escapeHtml(student.name || "이름 없음")}</strong>
-        <span>${escapeHtml(student.number || "")}번 · ${formatDate(student.loginAt || student.firstLoginAt)}</span>
+        <div>
+          <strong>${escapeHtml(student.name || "이름 없음")}</strong>
+          <span>${escapeHtml(student.number || "")}번 · ${formatDate(student.loginAt || student.firstLoginAt)}</span>
+        </div>
+        <button class="small-danger-button" type="button" data-reset-student="${student.id}">
+          초기화
+        </button>
       </div>
     `).join("")
     : "<p class=\"lead\">아직 접속한 학생이 없습니다.</p>";
@@ -509,6 +514,16 @@ async function resetStudentData() {
   alert(`${selectedClass}반 학생 데이터가 초기화되었습니다.`);
 }
 
+async function resetListedStudentData(uid) {
+  const target = data.students.find((student) => student.id === uid);
+  const name = target?.name || "해당 학생";
+
+  if (!confirm("정말 초기화하시겠습니까?")) return;
+
+  await deleteStudentSubmissions(uid);
+  alert(`${selectedClass}반 ${name} 학생 데이터가 초기화되었습니다.`);
+}
+
 async function deleteCollectionDocs(collectionName) {
   const snapshot = await getDocs(collection(db, "classes", selectedClass, collectionName));
   await Promise.all(snapshot.docs.map((item) => deleteDoc(item.ref)));
@@ -570,6 +585,12 @@ showAnswersButton.addEventListener("click", showAllAnswers);
 closeModalButton.addEventListener("click", closeModal);
 modalBackdrop.addEventListener("click", (event) => {
   if (event.target === modalBackdrop) closeModal();
+});
+
+studentList.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-reset-student]");
+  if (!button) return;
+  await resetListedStudentData(button.dataset.resetStudent);
 });
 
 cardList.addEventListener("click", (event) => {
