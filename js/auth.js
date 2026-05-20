@@ -7,8 +7,9 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import {
+  getRedirectResult,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
   signOut
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
@@ -195,8 +196,8 @@ async function verifyAccount(user) {
 
 googleLoginButton.addEventListener("click", async () => {
   try {
-    setLoading("Google 로그인 창을 여는 중입니다.");
-    await signInWithPopup(auth, googleProvider);
+    setLoading("Google 로그인 페이지로 이동합니다.");
+    await signInWithRedirect(auth, googleProvider);
   } catch (error) {
     showScreen("login");
     showMessage("로그인에 실패했습니다. 잠시 후 다시 시도해주세요.", true);
@@ -239,6 +240,12 @@ nameForm.addEventListener("submit", async (event) => {
     syncClassStudent(auth.currentUser.uid, profile)
   ]);
   showWaiting({ ...currentStudent, ...profile, name });
+});
+
+getRedirectResult(auth).catch((error) => {
+  showScreen("login");
+  showMessage("로그인에 실패했습니다. 잠시 후 다시 시도해주세요.", true);
+  console.error(error);
 });
 
 onAuthStateChanged(auth, async (user) => {
