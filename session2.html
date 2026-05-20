@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2차시 | 독립운동가 AI 분류 수업</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .session-shell {
+      width: min(980px, 100%);
+      margin: 0 auto;
+      padding: 16px 16px 44px;
+    }
+
+    .session-header {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 0;
+      background: var(--bg);
+    }
+
+    .route-strip {
+      height: 8px;
+      margin-bottom: 18px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #3B82F6, #EF4444, #22C55E, #F97316);
+    }
+
+    .activity {
+      display: none;
+    }
+
+    .activity.active {
+      display: grid;
+      gap: 18px;
+    }
+
+    .concept-stage {
+      perspective: 1200px;
+    }
+
+    .flashcard {
+      position: relative;
+      min-height: 300px;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 0.45s ease;
+    }
+
+    .flashcard.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .flash-face {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      backface-visibility: hidden;
+      box-shadow: 0 12px 34px rgba(24, 33, 47, 0.06);
+      text-align: center;
+    }
+
+    .flash-front strong {
+      font-size: clamp(2.4rem, 12vw, 4.8rem);
+      line-height: 1.15;
+    }
+
+    .flash-back {
+      transform: rotateY(180deg);
+    }
+
+    .flash-back p {
+      max-width: 680px;
+      font-size: 1.35rem;
+      line-height: 1.7;
+    }
+
+    .controls-row,
+    .mode-row,
+    .route-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .controls-row {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .route-button,
+    .mode-button {
+      min-height: 48px;
+      border: 2px solid var(--line);
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .route-button.selected,
+    .mode-button.selected {
+      border-color: var(--route-color, var(--primary));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--route-color, var(--primary)) 18%, transparent);
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .bars {
+      display: grid;
+      gap: 12px;
+    }
+
+    .bar-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .bar-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 800;
+    }
+
+    .bar-track {
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e7ecf5;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--route-color);
+    }
+
+    .history-list,
+    .status-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .readonly-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcff;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .status-line {
+      min-height: 24px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .status-line.error {
+      color: #dc2626;
+    }
+
+    .complete-screen {
+      text-align: center;
+    }
+
+    @media (max-width: 760px) {
+      .session-header,
+      .controls-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .result-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .route-buttons button,
+      .mode-row button {
+        flex: 1 1 100%;
+      }
+
+      .flashcard {
+        min-height: 260px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="session-shell">
+    <header class="session-header">
+      <div>
+        <a href="index.html" class="brand">독립운동가 AI 분류 수업</a>
+        <div id="studentBadge" class="badge">로그인 확인 중</div>
+      </div>
+      <div id="timerBadge" class="badge">타이머 대기</div>
+      <button id="logoutButton" class="secondary" type="button">로그아웃</button>
+    </header>
+
+    <div class="route-strip" aria-hidden="true"></div>
+
+    <section id="loadingView" class="panel activity active">
+      <p class="eyebrow">Session 2</p>
+      <h1>2차시 준비 중</h1>
+      <p class="lead">교사의 진행 단계를 확인하고 있습니다.</p>
+    </section>
+
+    <section id="conceptView" class="activity">
+      <div class="panel controls-row">
+        <div>
+          <p class="eyebrow">Activity 1</p>
+          <h1>ML 개념 플래시카드</h1>
+        </div>
+        <strong id="conceptProgress">1/6</strong>
+      </div>
+
+      <div class="concept-stage">
+        <article id="flashcard" class="flashcard" tabindex="0" role="button" aria-label="카드 뒤집기">
+          <div class="flash-face flash-front">
+            <strong id="conceptTerm">머신러닝</strong>
+          </div>
+          <div class="flash-face flash-back">
+            <p id="conceptDescription">데이터를 통해 스스로 학습하는 AI 기술</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="panel controls-row">
+        <button id="prevConcept" class="secondary" type="button">이전</button>
+        <button id="completeConcept" class="primary" type="button" disabled>완료</button>
+        <button id="nextConcept" class="secondary" type="button">다음</button>
+      </div>
+    </section>
+
+    <section id="classifyView" class="activity">
+      <section class="panel form-grid">
+        <div>
+          <p class="eyebrow">Activity 2</p>
+          <h1>텍스트 분류 체험</h1>
+          <p id="datasetStatus" class="lead">우리 반 라벨링 데이터를 불러오고 있습니다.</p>
+        </div>
+
+        <label>
+          분류할 문장
+          <textarea id="classifyText" rows="4" placeholder="김상옥이 종로 경찰서에 폭탄을 투척했다"></textarea>
+        </label>
+
+        <div>
+          <strong>먼저 예상해보기</strong>
+          <div id="expectedButtons" class="route-buttons"></div>
+        </div>
+
+        <div>
+          <strong>비교 모드</strong>
+          <div class="mode-row">
+            <button id="smallModeButton" class="mode-button selected" type="button">📦 소량 데이터 (30개)</button>
+            <button id="largeModeButton" class="mode-button" type="button">📚 대량 데이터 (전체)</button>
+          </div>
+        </div>
+
+        <button id="classifyButton" class="primary" type="button">분류하기</button>
+      </section>
+
+      <section id="classificationResult" class="result-grid"></section>
+
+      <section class="panel">
+        <h2>분류 이력</h2>
+        <div id="historyList" class="history-list"></div>
+      </section>
+    </section>
+
+    <section id="reflectView" class="activity">
+      <form id="reflectionForm" class="panel form-grid" novalidate>
+        <div>
+          <p class="eyebrow">Activity 3</p>
+          <h1>개인 상황카드 + 성찰일지</h1>
+          <p class="lead">합리적 설명을 내 삶의 선택에 적용해 봅니다.</p>
+        </div>
+
+        <label>
+          상황 유형
+          <select id="situationType">
+            <option value="갈등 상황">갈등 상황</option>
+            <option value="중요한 선택">중요한 선택</option>
+            <option value="목표 도전">목표 도전</option>
+            <option value="기타">기타</option>
+          </select>
+        </label>
+
+        <label>
+          🎯 목표: 내가 이루고 싶었던 것
+          <textarea id="lifeGoal" rows="3" required></textarea>
+        </label>
+        <label>
+          🌍 상황: 당시 나의 상황과 제약
+          <textarea id="lifeContext" rows="3" required></textarea>
+        </label>
+        <label>
+          ⚙️ 수단/행동: 내가 선택한 방법
+          <textarea id="lifeAction" rows="3" required></textarea>
+        </label>
+        <label>
+          📌 결과/영향: 그 선택의 결과
+          <textarea id="lifeResult" rows="3" required></textarea>
+        </label>
+
+        <button id="classifyReflectionButton" class="secondary" type="button">내 설명 분류하기</button>
+        <div id="reflectionPrediction" class="prediction-card">분류 결과가 여기에 표시됩니다.</div>
+
+        <label>
+          1. 내가 작성한 합리적 설명은 어떤 노선으로 분류되었는가?
+          <input id="journalRoute" type="text" readonly>
+        </label>
+
+        <label>
+          2. 예상한 결과와 실제 AI 분류 결과가 같았는가?
+          <select id="journalMatch">
+            <option value="같다">같다</option>
+            <option value="달랐다">달랐다</option>
+          </select>
+        </label>
+
+        <label>
+          3. 결과가 달랐다면 왜 그런 것 같은가?
+          <textarea id="journalReason" rows="3"></textarea>
+        </label>
+
+        <label>
+          4. AI의 한계는 무엇이라고 느꼈는가?
+          <textarea id="journalLimit" rows="3" required></textarea>
+        </label>
+
+        <label>
+          5. 합리적 설명을 내 삶에 적용하면 어떤 점이 도움될 것 같은가?
+          <textarea id="journalApply" rows="3" required></textarea>
+        </label>
+
+        <p id="reflectionStatus" class="status-line">임시저장됨 🟢</p>
+        <button class="primary" type="submit">성찰일지 제출</button>
+      </form>
+
+      <section id="completeView" class="panel complete-screen activity">
+        <h1>수고했어요! 오늘 수업 끝 🎉</h1>
+        <p id="completionCount" class="lead">우리 반 제출 현황을 확인하고 있습니다.</p>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="js/session2.js"></script>
+</body>
+</html>

@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>1차시 | 독립운동가 AI 분류 수업</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      min-height: 100vh;
+    }
+
+    .session-shell {
+      width: min(920px, 100%);
+      margin: 0 auto;
+      padding: 16px 16px 40px;
+    }
+
+    .session-header {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 0;
+      background: var(--bg);
+    }
+
+    .route-strip {
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #3B82F6, #EF4444, #22C55E, #F97316);
+    }
+
+    .activity {
+      display: none;
+    }
+
+    .activity.active {
+      display: grid;
+      gap: 18px;
+    }
+
+    .progress-wrap {
+      display: grid;
+      gap: 8px;
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .progress-track {
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e7ecf5;
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #3B82F6, #EF4444, #22C55E, #F97316);
+      transition: width 0.2s ease;
+    }
+
+    .keyword-card {
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+
+    .keyword-text {
+      font-size: clamp(3rem, 18vw, 6rem);
+      font-weight: 900;
+      line-height: 1.1;
+      word-break: keep-all;
+    }
+
+    .route-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .route-button {
+      min-height: 58px;
+      border: 2px solid var(--line);
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .route-button.selected {
+      border-color: var(--route-color);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--route-color) 18%, transparent);
+    }
+
+    .route-button[data-route="외교독립론"] {
+      --route-color: #3B82F6;
+    }
+
+    .route-button[data-route="무장투쟁론"] {
+      --route-color: #EF4444;
+    }
+
+    .route-button[data-route="실력양성론"] {
+      --route-color: #22C55E;
+    }
+
+    .route-button[data-route="민중혁명론"] {
+      --route-color: #F97316;
+    }
+
+    .status-line {
+      min-height: 24px;
+      color: var(--muted);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .status-line.error {
+      color: #dc2626;
+    }
+
+    .cloud-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .cloud-card {
+      min-height: 230px;
+    }
+
+    .cloud-card canvas {
+      width: 100%;
+      height: 180px;
+    }
+
+    .word-fallback {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 10px;
+    }
+
+    .word-fallback span {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #eef2f7;
+      font-weight: 800;
+    }
+
+    .disagreement-list,
+    .card-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .readonly-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcff;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-stack {
+      display: none;
+      gap: 14px;
+    }
+
+    .summary-stack.active {
+      display: grid;
+    }
+
+    @media (max-width: 720px) {
+      .session-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .route-buttons,
+      .cloud-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .keyword-card {
+        min-height: 190px;
+      }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js" defer></script>
+</head>
+<body>
+  <main class="session-shell">
+    <header class="session-header">
+      <div>
+        <a href="index.html" class="brand">독립운동가 AI 분류 수업</a>
+        <div id="studentBadge" class="badge">로그인 확인 중</div>
+      </div>
+      <div id="timerBadge" class="badge">타이머 대기</div>
+      <button id="logoutButton" class="secondary" type="button">로그아웃</button>
+    </header>
+
+    <div class="route-strip" aria-hidden="true"></div>
+
+    <section id="loadingView" class="panel activity active">
+      <p class="eyebrow">Session 1</p>
+      <h1>1차시 준비 중</h1>
+      <p class="lead">교사의 진행 단계를 확인하고 있습니다.</p>
+    </section>
+
+    <section id="labelView" class="activity">
+      <div class="panel progress-wrap">
+        <div class="progress-top">
+          <span>활동 1: 키워드 라벨링</span>
+          <span id="progressText">0/0 완료</span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="panel keyword-card">
+        <div id="keywordText" class="keyword-text">-</div>
+      </div>
+
+      <div id="labelButtons" class="route-buttons" aria-label="노선 선택"></div>
+      <p id="labelStatus" class="status-line" aria-live="polite"></p>
+
+      <section id="labelComplete" class="summary-stack">
+        <div class="panel">
+          <h2>제출 완료! 선생님을 기다려주세요 ✅</h2>
+          <p class="lead">우리 반의 라벨링 결과를 실시간으로 살펴봅니다.</p>
+        </div>
+        <div id="cloudGrid" class="cloud-grid"></div>
+        <div class="panel">
+          <h2>다르게 분류된 키워드</h2>
+          <p class="lead">💬 이 키워드는 친구들이 다르게 분류했어요 → AI도 헷갈릴 수 있어요</p>
+          <div id="disagreementList" class="disagreement-list"></div>
+        </div>
+      </section>
+    </section>
+
+    <section id="cardView" class="activity">
+      <form id="cardForm" class="panel form-grid" novalidate>
+        <div>
+          <p class="eyebrow">Activity 2</p>
+          <h1>인물카드 작성</h1>
+          <p class="lead">인물의 선택을 네 단계로 설명하고, 가장 알맞은 독립운동 노선을 고릅니다.</p>
+        </div>
+
+        <label>
+          인물 이름
+          <input id="character" type="text" placeholder="예: 이승만, 안창호, 신채호, 이동휘" required>
+        </label>
+
+        <div class="card-actions">
+          <strong>노선 선택</strong>
+          <div id="cardRouteButtons" class="route-buttons"></div>
+        </div>
+
+        <label>
+          🎯 목표(Goal): 이 인물이 궁극적으로 추구한 것은?
+          <textarea id="goal" rows="3" required></textarea>
+        </label>
+        <label>
+          🌍 상황(Context): 당시 처한 역사적 상황은?
+          <textarea id="context" rows="3" required></textarea>
+        </label>
+        <label>
+          ⚙️ 수단/행동(Action): 어떤 방법을 선택했는가?
+          <textarea id="action" rows="3" required></textarea>
+        </label>
+        <label>
+          📌 결과/영향(Result): 그 선택은 어떤 결과를 가져왔는가?
+          <textarea id="result" rows="3" required></textarea>
+        </label>
+
+        <p id="cardSaveStatus" class="status-line">임시저장됨 🟢</p>
+        <button class="primary" type="submit">인물카드 제출</button>
+      </form>
+
+      <section id="classCardsSection" class="panel activity">
+        <h2>우리 반 인물카드</h2>
+        <div id="classCards" class="card-list"></div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="js/session1.js"></script>
+</body>
+</html>

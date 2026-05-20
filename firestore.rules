@@ -1,0 +1,94 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isTeacher() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/teachers/$(request.auth.uid));
+    }
+
+    function validClassNum(classNum) {
+      return classNum in ["1", "3", "5", "7", "9"];
+    }
+
+    function ownsStudentProfile(classNum) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/students/$(request.auth.uid))
+        && get(/databases/$(database)/documents/students/$(request.auth.uid)).data.classNum == classNum;
+    }
+
+    function isClassMember(classNum) {
+      return isTeacher()
+        || ownsStudentProfile(classNum)
+        || (
+          signedIn()
+          && exists(/databases/$(database)/documents/classes/$(classNum)/students/$(request.auth.uid))
+        );
+    }
+
+    function validStudentWrite(uid) {
+      return isOwner(uid)
+        && validClassNum(request.resource.data.classNum)
+        && request.resource.data.email == request.auth.token.email
+        && (
+          !exists(/databases/$(database)/documents/students/$(uid))
+          || resource.data.classNum == request.resource.data.classNum
+        );
+    }
+
+    match /teachers/{uid} {
+      allow read: if isOwner(uid) || isTeacher();
+      allow create, update, delete: if isTeacher();
+    }
+
+    match /students/{uid} {
+      allow read: if isOwner(uid) || isTeacher();
+      allow create, update: if validStudentWrite(uid);
+      allow delete: if isTeacher();
+    }
+
+    match /classes/{classNum} {
+      allow read, write: if isTeacher();
+
+      match /settings/control {
+        allow read: if signedIn() && isClassMember(classNum);
+        allow create, update, delete: if isTeacher();
+      }
+
+      match /students/{uid} {
+        allow read: if signedIn() && isClassMember(classNum);
+        allow create, update: if isOwner(uid)
+          && validClassNum(classNum)
+          && request.resource.data.classNum == classNum
+          && request.resource.data.email == request.auth.token.email;
+        allow delete: if isTeacher();
+      }
+
+      match /labelings/{uid} {
+        allow read: if signedIn() && isClassMember(classNum);
+        allow create, update: if isOwner(uid) && ownsStudentProfile(classNum);
+        allow delete: if isTeacher();
+      }
+
+      match /cards/{uid} {
+        allow read: if signedIn() && isClassMember(classNum);
+        allow create, update: if isOwner(uid) && ownsStudentProfile(classNum);
+        allow delete: if isTeacher();
+      }
+
+      match /reflections/{uid} {
+        allow read: if signedIn() && isClassMember(classNum);
+        allow create, update: if isOwner(uid) && ownsStudentProfile(classNum);
+        allow delete: if isTeacher();
+      }
+    }
+  }
+}

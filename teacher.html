@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>교사용 대시보드 | 독립운동가 AI 분류 수업</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .teacher-shell {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      padding: 16px 16px 48px;
+    }
+
+    .teacher-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 0;
+      background: var(--bg);
+    }
+
+    .route-strip {
+      height: 8px;
+      margin-bottom: 18px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #3B82F6, #EF4444, #22C55E, #F97316);
+    }
+
+    .teacher-actions,
+    .class-tabs,
+    .phase-buttons,
+    .export-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tab-button,
+    .phase-button,
+    .export-button {
+      min-height: 44px;
+      border: 2px solid var(--line);
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .tab-button.active,
+    .phase-button.active {
+      border-color: var(--primary);
+      color: var(--primary-dark);
+      background: #eef4ff;
+    }
+
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .dashboard-main {
+      display: grid;
+      gap: 18px;
+    }
+
+    .metric-grid,
+    .cloud-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.8rem;
+    }
+
+    .status-list,
+    .bar-list,
+    .card-list,
+    .disagreement-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+
+    .clickable-row {
+      width: 100%;
+      min-height: auto;
+      text-align: left;
+      font-weight: 400;
+      cursor: pointer;
+    }
+
+    .bar-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .bar-meta {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 800;
+    }
+
+    .bar-track {
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e7ecf5;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--route-color);
+    }
+
+    .cloud-card canvas {
+      width: 100%;
+      height: 180px;
+    }
+
+    .word-fallback {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 8px;
+    }
+
+    .word-fallback span {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #eef2f7;
+      font-weight: 800;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 18px;
+      background: rgba(18, 28, 43, 0.45);
+    }
+
+    .modal-backdrop.active {
+      display: grid;
+    }
+
+    .modal {
+      width: min(760px, 100%);
+      max-height: min(760px, 88vh);
+      overflow: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .dashboard-layout,
+      .metric-grid,
+      .cloud-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .teacher-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js" defer></script>
+</head>
+<body>
+  <main class="teacher-shell">
+    <header class="teacher-header">
+      <div>
+        <a class="brand" href="index.html">독립운동가 AI 분류 수업</a>
+        <div id="teacherInfo" class="badge">교사 권한 확인 중</div>
+      </div>
+      <div class="teacher-actions">
+        <button id="loginButton" class="primary" type="button">교사 Google 로그인</button>
+        <button id="logoutButton" class="secondary" type="button" hidden>로그아웃</button>
+      </div>
+    </header>
+
+    <div class="route-strip" aria-hidden="true"></div>
+
+    <section class="panel">
+      <p class="eyebrow">Class Tabs</p>
+      <h1>교사용 대시보드</h1>
+      <div id="classTabs" class="class-tabs" aria-label="반 선택"></div>
+    </section>
+
+    <section class="dashboard-layout">
+      <aside class="panel stack">
+        <div>
+          <p class="eyebrow">Control</p>
+          <h2>진행 제어</h2>
+          <p id="currentPhase" class="lead">현재 phase: 확인 중</p>
+        </div>
+
+        <div id="phaseButtons" class="phase-buttons"></div>
+
+        <label>
+          타이머(분)
+          <input id="timerMinutes" type="number" min="1" max="120" step="1" value="10">
+        </label>
+        <button id="startTimerButton" class="primary" type="button">타이머 시작</button>
+        <p id="timerStatus" class="lead">타이머 대기 중</p>
+
+        <div class="export-actions">
+          <button id="exportAllButton" class="export-button" type="button">전체 CSV 내보내기</button>
+          <button id="exportReflectionsButton" class="export-button" type="button">성찰일지만 내보내기</button>
+        </div>
+      </aside>
+
+      <div class="dashboard-main">
+        <section class="metric-grid">
+          <div class="metric">
+            <span>접속 학생</span>
+            <strong id="studentCount">0명</strong>
+          </div>
+          <div class="metric">
+            <span>라벨링 완료</span>
+            <strong id="labelingCount">0/0</strong>
+          </div>
+          <div class="metric">
+            <span>인물카드 제출</span>
+            <strong id="cardCount">0명</strong>
+          </div>
+          <div class="metric">
+            <span>성찰일지 제출</span>
+            <strong id="reflectionCount">0명</strong>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>① 학생 접속 현황</h2>
+          <div id="studentList" class="status-list"></div>
+        </section>
+
+        <section class="panel">
+          <h2>② 라벨링 완료 현황</h2>
+          <div id="routeBars" class="bar-list"></div>
+          <h2>학생 간 라벨이 엇갈린 키워드</h2>
+          <div id="disagreementList" class="disagreement-list"></div>
+        </section>
+
+        <section class="panel">
+          <h2>③ 인물카드 제출 현황</h2>
+          <div id="cardList" class="card-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="teacher-actions">
+            <h2>④ 성찰일지 제출 현황</h2>
+            <button id="showAnswersButton" class="secondary" type="button">문항별 전체 답변 모아보기</button>
+          </div>
+          <div id="reflectionList" class="card-list"></div>
+        </section>
+
+        <section class="panel">
+          <h2>⑤ 워드클라우드</h2>
+          <div id="cloudGrid" class="cloud-grid"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <section class="panel modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">상세 보기</h2>
+        <button id="closeModalButton" class="secondary" type="button">닫기</button>
+      </div>
+      <div id="modalBody"></div>
+    </section>
+  </div>
+
+  <script type="module" src="js/teacher.js"></script>
+</body>
+</html>

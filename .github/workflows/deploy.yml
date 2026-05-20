@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate Firebase config
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+        run: |
+          cat > js/firebase-config.js <<EOF
+          import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+          import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+          import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+          const firebaseConfig = {
+            apiKey: "${FIREBASE_API_KEY}",
+            authDomain: "${FIREBASE_AUTH_DOMAIN}",
+            projectId: "${FIREBASE_PROJECT_ID}",
+            storageBucket: "${FIREBASE_STORAGE_BUCKET}",
+            messagingSenderId: "${FIREBASE_MESSAGING_SENDER_ID}",
+            appId: "${FIREBASE_APP_ID}"
+          };
+
+          export const app = initializeApp(firebaseConfig);
+          export const auth = getAuth(app);
+          export const db = getFirestore(app);
+          export const googleProvider = new GoogleAuthProvider();
+          EOF
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
