@@ -60,8 +60,6 @@ const reflectionList = document.getElementById("reflectionList");
 const cloudGrid = document.getElementById("cloudGrid");
 const exportAllButton = document.getElementById("exportAllButton");
 const exportReflectionsButton = document.getElementById("exportReflectionsButton");
-const resetUidInput = document.getElementById("resetUidInput");
-const resetStudentButton = document.getElementById("resetStudentButton");
 const resetClassButton = document.getElementById("resetClassButton");
 const showAnswersButton = document.getElementById("showAnswersButton");
 const modalBackdrop = document.getElementById("modalBackdrop");
@@ -500,20 +498,6 @@ async function deleteStudentSubmissions(uid) {
   ]);
 }
 
-async function resetStudentData() {
-  const uid = resetUidInput.value.trim();
-  if (!uid) {
-    alert("학생 UID를 입력해주세요.");
-    return;
-  }
-
-  if (!confirm("정말 초기화하시겠습니까?")) return;
-
-  await deleteStudentSubmissions(uid);
-  resetUidInput.value = "";
-  alert(`${selectedClass}반 학생 데이터가 초기화되었습니다.`);
-}
-
 async function resetListedStudentData(uid) {
   const target = data.students.find((student) => student.id === uid);
   const name = target?.name || "해당 학생";
@@ -579,7 +563,6 @@ phaseButtons.addEventListener("click", async (event) => {
 startTimerButton.addEventListener("click", startTimer);
 exportAllButton.addEventListener("click", exportAllCsv);
 exportReflectionsButton.addEventListener("click", exportReflectionsCsv);
-resetStudentButton.addEventListener("click", resetStudentData);
 resetClassButton.addEventListener("click", resetClassData);
 showAnswersButton.addEventListener("click", showAllAnswers);
 closeModalButton.addEventListener("click", closeModal);
